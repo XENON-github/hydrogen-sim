@@ -110,9 +110,6 @@
 <!-- SCREENSHOTS -->
 
 ## Screenshots
-
-> Drop your own images into `docs/images/` using the same file names (or edit the paths below).
-
 <div align="center">
 
 <!-- 1. Main window: density view -->
