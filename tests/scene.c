@@ -82,4 +82,5 @@ void scene_draw_hud(Scene *s, cairo_t *cr, int w, int h) {
     hs->phase = s->p.phase;
     scene_hud_extra(s, hs);
     hud_draw(cr, hs);
+    scene_draw_extra(s, cr, w, h);
 }

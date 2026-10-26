@@ -85,13 +85,20 @@ int main(int argc, char **argv) {
         int nf = getenv("HARNESS_FRAMES") ? atoi(getenv("HARNESS_FRAMES")) : 48;
         RecFormat fmt = strstr(argv[2], ".gif") ? REC_GIF : strstr(argv[2], ".mp4") ? REC_MP4 : REC_WEBM;
         char err[160];
-        Recorder *rec = recorder_open(fmt, argv[2], W, H, 24, GIF_PIX_BGRA, err, sizeof err);
+        /* frames are rendered at W x H (HUD layout is pixel-based) and optionally downscaled by HARNESS_SCALE for small files */
+        double sc_out = getenv("HARNESS_SCALE") ? atof(getenv("HARNESS_SCALE")) : 1.0;
+        Recorder *rec = recorder_open(fmt, argv[2], (int)(W * sc_out), (int)(H * sc_out), 24, GIF_PIX_BGRA, err, sizeof err);
         if (!rec) { fprintf(stderr, "recorder: %s\n", err); return 1; }
-        W = recorder_width(rec); H = recorder_height(rec);
+        int OW = recorder_width(rec), OH = recorder_height(rec);
         uint8_t *px = malloc((size_t)W * H * 4);
         cairo_surface_t *sf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, W, H);
+        cairo_surface_t *osf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, OW, OH);
+        float yaw0 = sc.cam.yaw;
+        double turns = getenv("HARNESS_ORBIT") ? atof(getenv("HARNESS_ORBIT")) : 0.0;     /* camera turns per loop */
         for (int f = 0; f < nf; f++) {
-            if (!scene_set_frac(&sc, (double)f / nf)) { fprintf(stderr, "scene %s is not animatable\n", argv[1]); return 1; }
+            int timed = scene_set_frac(&sc, (double)f / nf);
+            if (!timed && turns == 0.0) { fprintf(stderr, "scene %s has no time dependence: set HARNESS_ORBIT=1 for a turntable\n", argv[1]); return 1; }
+            sc.cam.yaw = yaw0 + (float)(turns * 2.0 * M_PI * f / nf);
             scene_render(&sc, fbo, W, H);
             glPixelStorei(GL_PACK_ALIGNMENT, 1);
             glReadPixels(0, 0, W, H, GL_RGBA, GL_UNSIGNED_BYTE, px);
@@ -107,10 +114,17 @@ int main(int argc, char **argv) {
             scene_draw_hud(&sc, cr, W, H);
             cairo_destroy(cr);
             cairo_surface_flush(sf);
-            if (!recorder_write(rec, cairo_image_surface_get_data(sf), cairo_image_surface_get_stride(sf))) { fprintf(stderr, "write failed\n"); return 1; }
+            cairo_t *oc = cairo_create(osf);
+            cairo_scale(oc, (double)OW / W, (double)OH / H);
+            cairo_set_source_surface(oc, sf, 0, 0);
+            cairo_pattern_set_filter(cairo_get_source(oc), CAIRO_FILTER_BEST);
+            cairo_paint(oc);
+            cairo_destroy(oc);
+            cairo_surface_flush(osf);
+            if (!recorder_write(rec, cairo_image_surface_get_data(osf), cairo_image_surface_get_stride(osf))) { fprintf(stderr, "write failed\n"); return 1; }
         }
         int ok = recorder_close(rec);
-        printf("%s %s (%d frames, %dx%d)\n", ok ? "wrote" : "FAILED", argv[2], nf, W, H);
+        printf("%s %s (%d frames, %dx%d)\n", ok ? "wrote" : "FAILED", argv[2], nf, OW, OH);
         return !ok;
     }
     scene_render(&sc, fbo, W, H);

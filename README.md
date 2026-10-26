@@ -124,7 +124,7 @@
 <div align="center">
 
 <!-- 1. Main window: density view -->
-<img src="docs/images/density-view.gif" alt="Electron density view" width="90%">
+<img src="docs/images/density-view.png" alt="Electron density view" width="90%">
 <br /><em>Electron density |ψ|² of an orbital</em>
 <br /><br />
 
@@ -135,7 +135,7 @@
 
 <!-- 3. Side-by-side: sidebar + complex phase wheel -->
 <img src="docs/images/sidebar.png" alt="Sidebar controls" width="38%">
-<img src="docs/images/complex-phase.gif" alt="Complex orbital phase wheel" width="58%">
+<img src="docs/images/complex-phase.png" alt="Complex orbital phase wheel" width="58%">
 <br /><em>Sidebar controls (left) and a complex orbital's phase wheel (right)</em>
 <br /><br />
 
@@ -158,6 +158,43 @@
 <!-- 7. Energy levels -->
 <img src="docs/images/energy-levels.png" alt="Energy level diagram" width="70%">
 <br /><em>Energy-level diagram: a 3p &rarr; 2s transition (Balmer-&alpha;, 656.1 nm, left) and a 1s + 2p + 3d superposition (right)</em>
+<br /><br />
+
+<!-- 8. Transitions -->
+<img src="docs/images/transition-3p-2s.gif" alt="3p to 2s transition animation" width="70%">
+<br /><em>3p &rarr; 2s (Balmer-&alpha;): the diffuse 3p cloud contracts into 2s while the dipole &lang;<b>r</b>&rang;(t) rings and dies away</em>
+<br /><br />
+<img src="docs/images/transition-2s-1s-forbidden.png" alt="Forbidden 2s to 1s transition" width="48%">
+<img src="docs/images/transition-3p-2s.png" alt="3p to 2s transition mid-sweep" width="48%">
+<br /><em>2s &rarr; 1s is E1-forbidden (flat dipole trace, left); 3p &rarr; 2s is allowed (right)</em>
+<br /><br />
+
+<!-- 9. More isosurfaces -->
+<img src="docs/images/isosurface-superposition.gif" alt="Isosurface of a 1s+2pz+3dz2 superposition" width="48%">
+<img src="docs/images/isosurface-turntable.gif" alt="Turntable of the complex 3d isosurface" width="48%">
+<br /><em>Time-evolving isosurface of a three-state superposition (lobe signs swap as phases rotate) and a turntable of the phase-coloured 3d, m = +1 surface</em>
+<br /><br />
+<img src="docs/images/isosurface-4f-wave.png" alt="4f isosurface" width="32%">
+<img src="docs/images/isosurface-3s-cutaway.png" alt="3s cutaway with nested shells" width="32%">
+<img src="docs/images/isosurface-plus-particles.png" alt="Isosurface plus particles" width="32%">
+<br /><em>4f<sub>xyz</sub> lobes &middot; translucent 3s cut-away with its nested radial shells &middot; isosurface + particle overlay</em>
+<br /><br />
+
+<!-- 10. More superposition views -->
+<img src="docs/images/superposition-three-state.png" alt="1s + 2pz + 3dz2 superposition, density" width="48%">
+<img src="docs/images/superposition-phase.png" alt="1s + 2pz superposition, phase colouring" width="48%">
+<br /><em>1s + 2p<sub>z</sub> + 3d<sub>z²</sub> density cloud with its dipole arrow and trace &middot; the wavefunction of 1s + 2p<sub>z</sub> coloured by phase (red/cyan = opposite phase)</em>
+<br /><br />
+
+<!-- 11. Video -->
+**Full-quality clips (H.264, 960&times;640, under 1 MB each):**
+[3p &rarr; 2s](docs/media/transition-3p-2s.mp4) &middot;
+[2p &rarr; 1s](docs/media/transition-2p-1s.mp4) &middot;
+[1s + 2p<sub>z</sub>](docs/media/superposition-1s-2pz.mp4) &middot;
+[1s + 2p<sub>z</sub> + 3d<sub>z²</sub>](docs/media/superposition-three-state.mp4) &middot;
+[superposition isosurface](docs/media/isosurface-superposition.mp4) &middot;
+[isosurface turntable](docs/media/isosurface-turntable.mp4)
+<br /><em>All screenshots and clips above were produced by the headless renderer, see <a href="#headless-rendering--media">Headless rendering & media</a>.</em>
 
 </div>
 
@@ -212,7 +249,7 @@ make
 ./build/hydrogen_simulator
 ```
 
-Optionally verify the physics, samplers, volume builder and video encoders with the GTK-free tests:
+Optionally verify the physics, samplers, volume builder and video encoders with the GTK-free tests (see also [Headless rendering & media](#headless-rendering--media)):
 
 ```sh
 make test
@@ -253,6 +290,8 @@ Two windows open: the main window (sidebar + density view) and the wavefunction 
 | Drag | Orbit the camera |
 | `Shift`+Drag / Right-drag / Middle-drag | Pan |
 | Scroll wheel / Touchpad pinch | Zoom |
+| Left-click a level in the **energy diagram** | Set the initial state (in superposition mode: add / remove that state) |
+| Right-click a level in the energy diagram | Set the final state of a transition |
 
 #### Keyboard
 
@@ -376,9 +415,55 @@ src/hud.c           Cairo overlay and sidebar radial plot
 src/view.c          one 3D viewport: GL area, input, async sampling, frame loop
 src/ui.c            sidebar controls
 src/app.c           application state, shortcuts, window setup
-tests/              unit tests + headless GL harness (make test / make gltest)
-docs/images/        README screenshots (replace the placeholders)
+tests/test_*.c      GTK-free unit tests (physics, transitions, superposition sampler, volume, GIF/MP4 export)
+tests/gl_harness.c  headless EGL harness (stills, GIF, MP4) + tests/scene*.c scene definitions
+docs/images/        README screenshots and GIFs
+docs/media/         README MP4 clips
 ```
+
+## Headless Rendering & Media
+
+The renderer, shaders, HUD and video encoders run without GTK, a window or a GPU (Linux: EGL + Mesa software rendering; needs `libegl1`, the Mesa DRI drivers and `cairo`). This is how the CI checks rendering, and how every image and clip in this README was made.
+
+```sh
+make build/gl_harness                                   # build the harness once
+
+./build/gl_harness <scene> out.png  [width height]      # a still
+./build/gl_harness <scene> out.gif  [width height]      # animated GIF (built-in encoder)
+./build/gl_harness <scene> out.mp4  [width height]      # H.264, needs ffmpeg
+```
+
+Animation options (environment variables):
+
+| Variable | Meaning |
+| :--- | :--- |
+| `HARNESS_FRAMES=<n>` | Number of frames in the loop (default 48) |
+| `HARNESS_SCALE=<f>` | Render at `width x height`, then downscale by `f` before encoding. Use e.g. `0.58` for small GIFs; the HUD layout stays proportioned |
+| `HARNESS_ORBIT=<turns>` | Camera turns per loop (use `1` for a turntable of a static scene) |
+| `SCENE_BRIGHT=<f>` | Override particle brightness (superpositions with 1s want about 5&ndash;6) |
+| `SCENE_DEBUG=1` | Print the render parameters |
+
+Scenes (`./build/gl_harness <scene> ...`):
+
+| Scene | What it shows |
+| :--- | :--- |
+| `dens_4dz2`, `wave_cplx`, `slice_3s`, `spheres_2pz` | Stationary particle views: density, complex phase wheel, cross-section, sphere style |
+| `iso_3dz2`, `iso_wave_3dz2`, `iso_cplx_wheel`, `iso_3s_cut`, `iso_4f_wave`, `iso_3dz2_both`, `iso_3s_glass_cut` | Isosurfaces: density, sign-coloured, phase-coloured, cut-away, translucent, with particles |
+| `super_dens_t0`, `super_dens_t2`, `super_wave_wheel`, `super_dens_three` | Superposition particle clouds (1s + 2p<sub>z</sub> at in-phase / anti-phase, phase view, three states). Animatable |
+| `isosup_dens`, `isosup_wave`, `isosup_wave_three` | Superposition isosurfaces. Animatable |
+| `trans_3p2s`, `trans_2p1s`, `trans_2s1s`, `trans_4f3d` (+ `_mid` for a mid-sweep still, `_wave`, `_wheel`) | Transition sweeps with the energy-level diagram overlaid. Animatable |
+
+Examples used for this README:
+
+```sh
+SCENE_BRIGHT=5 HARNESS_FRAMES=48 HARNESS_SCALE=0.58 ./build/gl_harness trans_3p2s docs/images/transition-3p-2s.gif 960 640
+HARNESS_FRAMES=40 HARNESS_ORBIT=1 HARNESS_SCALE=0.58 ./build/gl_harness iso_cplx_wheel docs/images/isosurface-turntable.gif 960 640
+SCENE_BRIGHT=5 HARNESS_FRAMES=72 ./build/gl_harness trans_3p2s docs/media/transition-3p-2s.mp4 960 640
+```
+
+`make gltest` renders a fixed set of scenes and fails if any comes out (almost) black. The software rasteriser is slow (about 0.4&ndash;1 s per frame), so a clip takes under a minute.
+
+---
 
 <!-- ROADMAP -->
 
